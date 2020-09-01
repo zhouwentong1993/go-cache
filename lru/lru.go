@@ -1,4 +1,4 @@
-package go_cache
+package lru
 
 import (
 	"container/list"
@@ -26,13 +26,13 @@ func New(maxBytes uint64, OnEvicted func(string, Value)) *Cache {
 	}
 }
 
-func (c Cache) Get(key string) (value Value, ok bool) {
+func (c Cache) Get(key string) (ok bool, value Value) {
 	if ele, ok := c.cache[key]; ok {
 		c.list.MoveToFront(ele)
 		kv := ele.Value.(*entry)
-		return kv.value, true
+		return true, kv.value
 	} else {
-		return nil, false
+		return false, nil
 	}
 }
 
