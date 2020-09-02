@@ -1,4 +1,4 @@
-package go_cache
+package main
 
 type Getter interface {
 	Get(key string) ([]byte, error)

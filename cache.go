@@ -1,4 +1,4 @@
-package go_cache
+package main
 
 import (
 	lru2 "go-cache/lru"

@@ -1,4 +1,4 @@
-package go_cache
+package main
 
 import "sync"
 
@@ -29,7 +29,7 @@ func New(name string, getter Getter, maxBytes uint64) *Group {
 }
 
 func GetGroup(name string) *Group {
-	if name != "" {
+	if name == "" {
 		return nil
 	}
 	mu.Lock()
@@ -45,7 +45,7 @@ func (g *Group) Get(key string) (bv ByteView, err error) {
 		return value, nil
 	} else {
 		if value, err1 := g.getter.Get(key); err1 != nil {
-			return
+			return ByteView{}, err1
 		} else {
 			view := ByteView{bytes: cloneBytes(value)}
 			g.mainCache.Add(key, view)
