@@ -1,11 +1,11 @@
 package go_cache
 
 type Getter interface {
-	Get(key string) (error, []byte)
+	Get(key string) ([]byte, error)
 }
 
-type GetterFunc func(key string) (error, []byte)
+type GetterFunc func(key string) ([]byte, error)
 
-func (f GetterFunc) Get(key string) (error, []byte) {
+func (f GetterFunc) Get(key string) ([]byte, error) {
 	return f(key)
 }

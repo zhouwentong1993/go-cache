@@ -26,13 +26,13 @@ func New(maxBytes uint64, OnEvicted func(string, Value)) *Cache {
 	}
 }
 
-func (c Cache) Get(key string) (ok bool, value Value) {
+func (c Cache) Get(key string) (value Value, ok bool) {
 	if ele, ok := c.cache[key]; ok {
 		c.list.MoveToFront(ele)
 		kv := ele.Value.(*entry)
-		return true, kv.value
+		return kv.value, true
 	} else {
-		return false, nil
+		return nil, false
 	}
 }
 
