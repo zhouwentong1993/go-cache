@@ -6,12 +6,34 @@ type Group struct {
 	name      string
 	mainCache cache
 	getter    Getter
+	picker    PeerPicker
 }
 
 var (
 	mu     sync.Mutex
 	groups = make(map[string]*Group)
 )
+
+func (g *Group) RegisterPeer(p PeerPicker) {
+	g.picker = p
+}
+
+func (g *Group) Load(key string) (value ByteView, err error) {
+	if peer, ok := g.picker.PickPeer(key); ok {
+		data, peerErr := peer.Get(g.name, key)
+		if peerErr != nil {
+			return ByteView{bytes: nil}, peerErr
+		}
+		return ByteView{bytes: data}, nil
+	} else {
+		if getterValue, err := g.getter.Get(key); err == nil {
+			g.mainCache.Add(key, ByteView{bytes: getterValue})
+			return ByteView{bytes: cloneBytes(getterValue)}, nil
+		} else {
+			return ByteView{}, err
+		}
+	}
+}
 
 func New(name string, getter Getter, maxBytes uint64) *Group {
 	if name == "" || getter == nil {
