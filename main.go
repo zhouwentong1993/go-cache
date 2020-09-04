@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	."go-cache/gocache"
 )
 
 func main() {
