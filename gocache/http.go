@@ -17,12 +17,22 @@ const (
 	defaultReplica = 10
 )
 
+// 这是什么抽象？
 type HTTPPool struct {
 	self      string
 	basePath  string
 	mu        sync.Mutex
 	peers     *ch.Map
-	httpPeers map[string]PeerGetter
+	httpPeers map[string]*httpPeerGetter
+}
+
+func (h *HTTPPool) PickPeer(key string) (peer PeerGetter, ok bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if pg, ok := h.httpPeers[key]; ok {
+		return pg, true
+	}
+	return
 }
 
 func NewHTTPPool(self string) *HTTPPool {
@@ -38,6 +48,7 @@ func (h *HTTPPool) Set(peers ...string) {
 	h.peers = ch.New(defaultReplica, crc32.ChecksumIEEE)
 	// Golang 要这么写，跟 Java 不一样。类型转换得不太对
 	h.peers.AddNodes(peers...)
+	h.httpPeers = make(map[string]*httpPeerGetter, len(peers))
 	for _, peer := range peers {
 		h.httpPeers[peer] = &httpPeerGetter{baseUrl: peer + h.basePath}
 	}
@@ -89,6 +100,8 @@ func (h *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
+var _ PeerPicker = (*HTTPPool)(nil)
+
 type httpPeerGetter struct {
 	baseUrl string
 }
@@ -110,3 +123,5 @@ func (h *httpPeerGetter) Get(group string, key string) (data []byte, err error) 
 	}
 	return respData, nil
 }
+
+var _ PeerGetter = (*httpPeerGetter)(nil)

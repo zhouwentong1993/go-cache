@@ -12,7 +12,7 @@ func (b ByteView) ToString() string {
 	return string(b.bytes)
 }
 
-func (b ByteView) byteSlice() []byte {
+func (b ByteView) ByteSlice() []byte {
 	return cloneBytes(b.bytes)
 }
 
