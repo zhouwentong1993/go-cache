@@ -109,6 +109,7 @@ type httpPeerGetter struct {
 // 通过 HTTP 方式获取数据
 func (h *httpPeerGetter) Get(group string, key string) (data []byte, err error) {
 	requestURL := fmt.Sprintf("%v%v/%v", h.baseUrl, url.QueryEscape(group), url.QueryEscape(key))
+	fmt.Printf("[slowdb]get key:%s from group:%s", key, group)
 	resp, err := http.Get(requestURL)
 	if err != nil {
 		return nil, err

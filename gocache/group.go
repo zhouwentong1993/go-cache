@@ -1,12 +1,17 @@
 package gocache
 
-import "sync"
+import (
+	"fmt"
+	"go-cache/gocache/singleflight"
+	"sync"
+)
 
 type Group struct {
 	name      string
 	mainCache cache
 	getter    Getter
 	picker    PeerPicker
+	loader    *singleflight.Group
 }
 
 var (
@@ -19,20 +24,27 @@ func (g *Group) RegisterPeer(p PeerPicker) {
 }
 
 func (g *Group) Load(key string) (value ByteView, err error) {
-	if peer, ok := g.picker.PickPeer(key); ok {
-		data, peerErr := peer.Get(g.name, key)
-		if peerErr != nil {
-			return ByteView{bytes: nil}, peerErr
-		}
-		return ByteView{bytes: data}, nil
-	} else {
-		if getterValue, err := g.getter.Get(key); err == nil {
-			g.mainCache.Add(key, ByteView{bytes: getterValue})
-			return ByteView{bytes: cloneBytes(getterValue)}, nil
+	v, err := g.loader.Do(key, func(key string) (interface{}, error) {
+		if peer, ok := g.picker.PickPeer(key); ok {
+			data, peerErr := peer.Get(g.name, key)
+			if peerErr != nil {
+				return nil, peerErr
+			}
+			return ByteView{bytes: data}, nil
 		} else {
-			return ByteView{}, err
+			if getterValue, err := g.getter.Get(key); err == nil {
+				g.mainCache.Add(key, ByteView{bytes: getterValue})
+				return ByteView{bytes: cloneBytes(getterValue)}, nil
+			} else {
+				return ByteView{}, err
+			}
 		}
+	})
+
+	if err != nil {
+		return ByteView{}, err
 	}
+	return v.(ByteView), nil
 }
 
 func New(name string, getter Getter, maxBytes uint64) *Group {
@@ -45,6 +57,7 @@ func New(name string, getter Getter, maxBytes uint64) *Group {
 		name:      name,
 		mainCache: cache{cacheBytes: maxBytes},
 		getter:    getter,
+		loader:    &singleflight.Group{},
 	}
 	groups[name] = g
 	return g
@@ -63,6 +76,7 @@ func (g *Group) Get(key string) (bv ByteView, err error) {
 	if key == "" {
 		return ByteView{}, nil
 	}
+	fmt.Printf("[slowdb]get key:%s", key)
 	if value, ok := g.mainCache.Get(key); ok {
 		return value, nil
 	} else {

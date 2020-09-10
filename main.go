@@ -51,6 +51,7 @@ func getCacheServerURL(urls []string, port int) string {
 
 func newGroup(db map[string]string) *Group {
 	return New("score", GetterFunc(func(key string) ([]byte, error) {
+		log.Println("[SlowDB] search key", key)
 		if v, ok := db[key]; !ok {
 			return nil, fmt.Errorf("no value")
 		} else {
