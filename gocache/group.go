@@ -2,6 +2,7 @@ package gocache
 
 import (
 	"fmt"
+	"go-cache/gocache/pb"
 	"go-cache/gocache/singleflight"
 	"sync"
 )
@@ -26,11 +27,16 @@ func (g *Group) RegisterPeer(p PeerPicker) {
 func (g *Group) Load(key string) (value ByteView, err error) {
 	v, err := g.loader.Do(key, func(key string) (interface{}, error) {
 		if peer, ok := g.picker.PickPeer(key); ok {
-			data, peerErr := peer.Get(g.name, key)
+			req := &pb.Request{
+				Group: g.name,
+				Key:   key,
+			}
+			resp := &pb.Response{}
+			peerErr := peer.Get(req, resp)
 			if peerErr != nil {
 				return nil, peerErr
 			}
-			return ByteView{bytes: data}, nil
+			return ByteView{bytes: resp.Value}, nil
 		} else {
 			if getterValue, err := g.getter.Get(key); err == nil {
 				g.mainCache.Add(key, ByteView{bytes: getterValue})

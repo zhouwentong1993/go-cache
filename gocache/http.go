@@ -3,6 +3,8 @@ package gocache
 import (
 	"fmt"
 	ch "go-cache/gocache/consistenthash"
+	"go-cache/gocache/pb"
+	"google.golang.org/protobuf/proto"
 	"hash/crc32"
 	"io/ioutil"
 	"log"
@@ -107,22 +109,25 @@ type httpPeerGetter struct {
 }
 
 // 通过 HTTP 方式获取数据
-func (h *httpPeerGetter) Get(group string, key string) (data []byte, err error) {
-	requestURL := fmt.Sprintf("%v%v/%v", h.baseUrl, url.QueryEscape(group), url.QueryEscape(key))
-	fmt.Printf("[slowdb]get key:%s from group:%s", key, group)
-	resp, err := http.Get(requestURL)
+func (h *httpPeerGetter) Get(req *pb.Request, resp *pb.Response) (err error) {
+	requestURL := fmt.Sprintf("%v%v/%v", h.baseUrl, url.QueryEscape(req.GetGroup()), url.QueryEscape(req.GetKey()))
+	fmt.Printf("[slowdb]get key:%s from group:%s", req.GetKey(), req.GetGroup())
+	resp1, err := http.Get(requestURL)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server response: %s", resp.Status)
+	if resp1.StatusCode != http.StatusOK {
+		return fmt.Errorf("server response: %s", resp1.Status)
 	}
 
-	respData, err := ioutil.ReadAll(resp.Body)
+	respData, err := ioutil.ReadAll(resp1.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return respData, nil
+	if err = proto.Unmarshal(respData, resp); err != nil {
+		return err
+	}
+	return nil
 }
 
 var _ PeerGetter = (*httpPeerGetter)(nil)

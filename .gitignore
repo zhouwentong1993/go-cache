@@ -24,6 +24,8 @@ data_*/
 .idea/**/dictionaries
 .idea/**/shelf
 
+.idea
+
 # Generated files
 .idea/**/contentModel.xml
 
@@ -104,3 +106,5 @@ fabric.properties
 # vendor/
 
 .idea/sonarlint/
+go.sum
+server
